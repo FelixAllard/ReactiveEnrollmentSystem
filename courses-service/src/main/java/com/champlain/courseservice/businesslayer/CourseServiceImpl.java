@@ -77,6 +77,22 @@ public class CourseServiceImpl implements CourseService {
                 //convert the new Entity (returned by the db) to a CourseResponseModel
                 .map(EntityModelUtil::toCourseResponseModel);
     }
+    //TODO check if it is needed
+
+    /**
+     * We accept a courseId and give back a courseResponseModel
+     * @param courseId
+     * @return CourseResponseModel
+     */
+    @Override // ADDED THIS OVERIDE
+    public Mono<CourseResponseModel> deleteCourseByCourseId(String courseId) {
+        return courseRepository.findCourseByCourseId(courseId)
+                .switchIfEmpty(Mono.defer(() -> Mono.error(new NotFoundException("Course id not found: " + courseId))))
+                .flatMap(existingCourse -> courseRepository.delete(existingCourse).then(Mono.just(existingCourse)))
+                .map(EntityModelUtil::toCourseResponseModel);
+    }
+
+
 
     @Override
     public Mono<CourseResponseModel> updateCourse(Mono<CourseRequestModel> courseRequestModel, String courseId) {

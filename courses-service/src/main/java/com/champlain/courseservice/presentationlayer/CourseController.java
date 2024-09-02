@@ -65,4 +65,14 @@ public class CourseController {
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.badRequest().build());
     }
+    @DeleteMapping(value = "/{courseId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<ResponseEntity<CourseResponseModel>> deleteCourseByCourseId(@PathVariable String courseId) {
+        return Mono.just(courseId)
+                .filter(id -> id.length() == 36) //validate the course id
+                .switchIfEmpty(Mono.error(new InvalidInputException("Provided Course id is invalid: " + courseId)))
+                .flatMap(courseService::deleteCourseByCourseId)
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.badRequest().build());
+    }
+
 }
