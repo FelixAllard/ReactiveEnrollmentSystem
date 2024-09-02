@@ -1,0 +1,40 @@
+@startuml
+'!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Container.puml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+!define DEVICONS https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons
+!define FONTAWESOME https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/font-awesome-5
+
+!include FONTAWESOME/users.puml
+
+AddElementTag("microService", $shape=EightSidedShape(), $bgColor="CornflowerBlue", $fontColor="white", $legendText="micro service\neight sided")
+AddElementTag("storage", $shape=RoundedBoxShape(), $bgColor="LightSeaGreen", $fontColor="white")
+AddRelTag(aggregate_root, $lineColor="red")
+
+LAYOUT_TOP_DOWN()
+'LAYOUT_WITH_LEGEND()
+SHOW_PERSON_OUTLINE()
+'HIDE_STEREOTYPE()
+
+title Container Diagram for Champlain College Registration System (partial)
+
+System_Boundary(c1, "Registration System"){
+
+    Container(enrollments_service, "enrollments-service", "Java and Spring Boot", "Enrollment Service - Aggregator\n\nProvides APIs for enrollment", $tags="microService")
+    Container(students_service, "students-service", "Java and Spring Boot", "Student Service\n\nProvides APIs for student", $tags="microService")
+    Container(courses_service, "courses-service", "Java and Spring Boot", "Course Service\n\nProvides APIs for course", $tags="microService")
+
+    ContainerDb(enrollments_db, "Enrollments Database", "Mongo", "Reactive Database for enrollments", $tags="storage")
+    ContainerDb(students_db, "Students Database", "MySQL", "Database for students", $tags="storage")
+    ContainerDb(courses_db, "Courses Database", "Postgres", "Reactive Database for courses", $tags="storage")
+
+    }
+
+    Rel(enrollments_service, students_service, "Makes API calls to", "JSON/REST/Events")
+    Rel_R(enrollments_service, enrollments_db, "Reads from and writes to", "Reactive Mongo/MQL/Events")
+    Rel(enrollments_service, courses_service, "Makes API calls to", "JSON/REST/Events")
+    Rel_D(students_service, students_db, "Reads from and writes to", "JDBC/SQL/TCP")
+    Rel_D(courses_service, courses_db, "Reads from and writes to", "R2DBC/SQL/Events")
+
+}
+@enduml
