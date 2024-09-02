@@ -38,6 +38,11 @@ public class CourseController {
                 .map(ResponseEntity::ok);
     }
 
+    /**
+     * Controller for AddCourse. Will use defaultIfEmpty in case something goes wrong!
+     * @param courseRequestModel
+     * @return
+     */
     @PostMapping(value="", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<CourseResponseModel>> addCourse(@RequestBody Mono<CourseRequestModel> courseRequestModel){
         return courseService.addCourse(courseRequestModel)
@@ -45,6 +50,12 @@ public class CourseController {
                 .defaultIfEmpty(ResponseEntity.badRequest().build());
     }
 
+    /**
+     * This is for the updateCourseByCourseId function
+     * @param courseRequestModel
+     * @param courseId
+     * @return
+     */
     @PutMapping(value="/{courseId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<CourseResponseModel>> updateCourseByCourseId(@RequestBody Mono<CourseRequestModel> courseRequestModel, @PathVariable String courseId) {
         return Mono.just(courseId)

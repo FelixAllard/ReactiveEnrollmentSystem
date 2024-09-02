@@ -15,6 +15,11 @@ public class EntityModelUtil {
         return courseResponseModel;
     }
 
+    /**
+     * This will transform a CourseRequestModel into a Course
+     * @param courseRequestModel
+     * @return Course
+     */
     public static Course toCourseEntity(CourseRequestModel courseRequestModel) {
         Course course = new Course();
         BeanUtils.copyProperties(courseRequestModel, course);

@@ -12,6 +12,8 @@ public interface CourseService {
     Mono<CourseResponseModel> getCourseByCourseId(String courseId);
 
     Mono<CourseResponseModel> addCourse(Mono<CourseRequestModel> course);
+    Mono<CourseResponseModel> updateCourseByCourseId(Mono<CourseRequestModel>
+                                                             courseRequestModel, String courseId);
 
     Mono<CourseResponseModel> updateCourse(Mono<CourseRequestModel> courseRequestModel, String courseId);
 }
