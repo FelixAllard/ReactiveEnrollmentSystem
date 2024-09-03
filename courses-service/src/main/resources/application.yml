@@ -21,9 +21,11 @@ spring:
     username: user
     password: pwd
 
+    defer-datasource-initialization: true
 
   sql:
     init:
+      platform: psql
       mode:
         always
 

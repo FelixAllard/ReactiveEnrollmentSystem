@@ -9,5 +9,5 @@ public class CoursesServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(CoursesServiceApplication.class, args);
 	}
-
+//./gradlew clean build test
 }

@@ -53,6 +53,9 @@ jacocoTestReport {
 	afterEvaluate {
 		classDirectories.setFrom(files(classDirectories.files.collect {
 			fileTree(dir: it, exclude: [
+					"com/champlain/enrollmentservice/presentationlayer/students/**",
+					"com/champlain/enrollmentservice/businesslayer/students/**",
+					"com/champlain/enrollmentservice/domainclientlayer/Students/StudentClientSynchronous.class"
 					//"com/petclinic/**/BillingServiceApplication.class"
 			])
 		}))

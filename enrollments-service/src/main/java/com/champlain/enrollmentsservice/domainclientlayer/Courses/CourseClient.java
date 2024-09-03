@@ -29,26 +29,21 @@ public class CourseClient {
         return webClient.get()
                 .uri("/{courseId}", courseId)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, httpErrorInfo ->
-                        httpErrorInfo.bodyToMono(HttpErrorInfo.class)
-                                .flatMap(error -> {
-                                    switch (httpErrorInfo.statusCode().value())
-                                    {
-                                        case 404:
-                                            return Mono.error(new
-                                                    NotFoundException("Did not find : " + courseId + " - With message : "+ error.getMessage()));
-                                        case 422:
-                                            return Mono.error(new
-                                                    InvalidInputException(error.getMessage()));
-                                        default:
-                                            return Mono.error(new
-                                                    IllegalArgumentException(error.getMessage()));
-                                    }
-                                })
+                .onStatus(HttpStatusCode::isError,
+                        error -> switch(error.statusCode().value())
+                        {
+                            case 404 ->
+                                    Mono.error(new
+                                            NotFoundException("CourseId not found: " + courseId));
+                            case 422 ->
+                                    Mono.error(new
+                                            InvalidInputException("CourseId invalid: " + courseId));
+                            default ->
+                                    Mono.error(new
+                                            IllegalArgumentException("Something went wrong"));
+                        }
                 )
-                .bodyToFlux(CourseResponseModel.class)
-                .next()
-                .switchIfEmpty(Mono.error(new NotFoundException("Course id not found " + courseId)));
+                .bodyToMono(CourseResponseModel.class);
     }
 
 }
