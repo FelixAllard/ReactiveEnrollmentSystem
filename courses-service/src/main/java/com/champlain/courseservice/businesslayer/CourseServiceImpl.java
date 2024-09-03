@@ -34,9 +34,12 @@ public class CourseServiceImpl implements CourseService {
     public Mono<CourseResponseModel> getCourseByCourseId(String courseId) {
         return courseRepository.findCourseByCourseId(courseId)
                 .switchIfEmpty(Mono.error(new NotFoundException("Course id not found " + courseId)))
-                .doOnNext(i -> log.debug("The course entity is: " + i.toString())).map(EntityModelUtil::toCourseResponseModel)
+                .doOnNext(course -> log.debug("Found course: " + course))
+                .map(EntityModelUtil::toCourseResponseModel)
+                .doOnNext(response -> log.debug("Mapped response: " + response))
                 .log();
     }
+
 
     /**
      * Controller method. Creates a course into the database
