@@ -65,6 +65,7 @@ public class CourseController {
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.badRequest().build());
     }
+
     @DeleteMapping(value = "/{courseId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<CourseResponseModel>> deleteCourseByCourseId(@PathVariable String courseId) {
         return Mono.just(courseId)
@@ -74,5 +75,4 @@ public class CourseController {
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.badRequest().build());
     }
-
 }

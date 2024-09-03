@@ -106,4 +106,5 @@ public class CourseServiceImpl implements CourseService {
                 .flatMap(courseRepository::save)
                 .map(EntityModelUtil::toCourseResponseModel);
     }
+
 }
