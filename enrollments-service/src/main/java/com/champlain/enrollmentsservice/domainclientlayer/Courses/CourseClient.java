@@ -46,7 +46,9 @@ public class CourseClient {
                                     }
                                 })
                 )
-                .bodyToMono(CourseResponseModel.class);
+                .bodyToFlux(CourseResponseModel.class)
+                .next()
+                .switchIfEmpty(Mono.error(new NotFoundException("Course id not found " + courseId)));
     }
 
 }

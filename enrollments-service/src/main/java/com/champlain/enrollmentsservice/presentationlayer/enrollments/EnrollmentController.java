@@ -20,7 +20,8 @@ public class EnrollmentController {
         this.enrollmentService = enrollmentService;
     }
     @PostMapping
-    public Mono<ResponseEntity<EnrollmentResponseModel>> addEnrollment(@RequestBody Mono<EnrollmentRequestModel> enrollmentRequestModel) {
+    public Mono<ResponseEntity<EnrollmentResponseModel>> addEnrollment(@RequestBody
+                                                                       Mono<EnrollmentRequestModel> enrollmentRequestModel) {
         return enrollmentService.addEnrollment(enrollmentRequestModel)
                 .map(e -> ResponseEntity.status(HttpStatus.CREATED).body(e))
                 .defaultIfEmpty(ResponseEntity.badRequest().build());
