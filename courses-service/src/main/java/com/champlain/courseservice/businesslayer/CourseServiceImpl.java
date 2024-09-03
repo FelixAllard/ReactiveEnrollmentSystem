@@ -80,7 +80,6 @@ public class CourseServiceImpl implements CourseService {
                 //convert the new Entity (returned by the db) to a CourseResponseModel
                 .map(EntityModelUtil::toCourseResponseModel);
     }
-    //TODO check if it is needed
 
     /**
      * We accept a courseId and give back a courseResponseModel
