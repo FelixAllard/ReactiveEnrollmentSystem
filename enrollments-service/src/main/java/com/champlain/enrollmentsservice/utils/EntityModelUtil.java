@@ -21,6 +21,20 @@ public class EntityModelUtil {
                 .courseNumber(rc.getCourseResponseModel().getCourseNumber())
                 .build();
     }
+    public static Enrollment toEnrollmentEntity(EnrollmentResponseModel enrollmentResponseModel) {
+        Enrollment enrollment = new Enrollment();
+        enrollment.setId(enrollmentResponseModel.getEnrollmentId());
+        enrollment.setEnrollmentYear(enrollmentResponseModel.getEnrollmentYear());
+        enrollment.setSemester(enrollmentResponseModel.getSemester());
+        enrollment.setStudentId(enrollmentResponseModel.getStudentId());
+        enrollment.setStudentFirstName(enrollmentResponseModel.getStudentFirstName());
+        enrollment.setStudentLastName(enrollmentResponseModel.getStudentLastName());
+        enrollment.setCourseId(enrollmentResponseModel.getCourseId());
+        enrollment.setCourseName(enrollmentResponseModel.getCourseName());
+        enrollment.setCourseNumber(enrollmentResponseModel.getCourseNumber());
+        // Set other fields as needed
+        return enrollment;
+    }
     public static EnrollmentResponseModel toEnrollmentResponseModel(Enrollment
                                                                             enrollment) {
         EnrollmentResponseModel enrollmentResponseModel = new

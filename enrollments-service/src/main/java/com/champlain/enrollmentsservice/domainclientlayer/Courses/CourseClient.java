@@ -36,7 +36,7 @@ public class CourseClient {
                                     {
                                         case 404:
                                             return Mono.error(new
-                                                    NotFoundException(error.getMessage()));
+                                                    NotFoundException("Did not find : " + courseId + " - With message : "+ error.getMessage()));
                                         case 422:
                                             return Mono.error(new
                                                     InvalidInputException(error.getMessage()));

@@ -2,72 +2,91 @@ package com.champlain.enrollmentsservice.businesslayer.enrollments;
 
 import com.champlain.enrollmentsservice.dataaccesslayer.EnrollmentRepository;
 import com.champlain.enrollmentsservice.domainclientlayer.Courses.CourseClient;
-import com.champlain.enrollmentsservice.domainclientlayer.Courses.CourseResponseModel;
 import com.champlain.enrollmentsservice.domainclientlayer.Students.StudentClientAsynchronous;
 import com.champlain.enrollmentsservice.presentationlayer.enrollments.EnrollmentRequestModel;
 import com.champlain.enrollmentsservice.presentationlayer.enrollments.EnrollmentResponseModel;
 import com.champlain.enrollmentsservice.utils.EntityModelUtil;
-import com.champlain.enrollmentsservice.utils.exceptions.EnrollmentException;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.champlain.enrollmentsservice.utils.exceptions.NotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.logging.Logger;
-
 @Service
-public class EnrollmentServiceImpl implements EnrollmentService {
+@Slf4j
+public class EnrollmentServiceImpl implements EnrollmentService{
 
-    final private StudentClientAsynchronous studentClient;
-    final private CourseClient courseClient;
-    final private EnrollmentRepository enrollmentRepository;
-    Logger logger = Logger.getLogger(EnrollmentServiceImpl.class.getName());
+    private final EnrollmentRepository enrollmentRepository;
+    private final CourseClient courseClient;
+    private final StudentClientAsynchronous studentClient;
 
-
-    public EnrollmentServiceImpl(StudentClientAsynchronous studentClient,
-                                 CourseClient courseClient,
-                                 EnrollmentRepository enrollmentRepository) {
-        this.studentClient = studentClient;
-        this.courseClient = courseClient;
+    public EnrollmentServiceImpl(EnrollmentRepository enrollmentRepository, CourseClient courseClient, StudentClientAsynchronous studentClient) {
         this.enrollmentRepository = enrollmentRepository;
+        this.courseClient = courseClient;
+        this.studentClient = studentClient;
     }
 
+    //DONE: implement the getAllEnrollments method
+    public Flux<EnrollmentResponseModel> getAllEnrollments() {
+        return enrollmentRepository.findAll()
+                .map(EntityModelUtil::toEnrollmentResponseModel);
+    }
+
+    //DONE: implement the getEnrollmentByEnrollmentId method
+    public Mono<EnrollmentResponseModel> getEnrollmentByEnrollmentId(String enrollmentId) {
+        return enrollmentRepository.findEnrollmentByEnrollmentId(enrollmentId)
+                .switchIfEmpty(Mono.defer(() -> Mono.error(new NotFoundException("Enrollment not found" + enrollmentId))))
+                .doOnNext(e -> log.debug("The enrollment response entity is: " + e.toString()))
+                .map(EntityModelUtil::toEnrollmentResponseModel);
+    }
 
     @Override
-    public Mono<EnrollmentResponseModel> addEnrollment(Mono<EnrollmentRequestModel>
-                                                               enrollmentRequestModel) {
+    public Mono<EnrollmentResponseModel> addEnrollment(Mono<EnrollmentRequestModel> enrollmentRequestModel) {
         return enrollmentRequestModel
                 .map(RequestContext::new)
                 .flatMap(this::studentRequestResponse)
                 .flatMap(this::courseRequestResponse)
                 .map(EntityModelUtil::toEnrollmentEntity)
-                .map(enrollmentRepository::save)
-                .flatMap(entity -> entity)
+                .flatMap(enrollmentRepository::save)
                 .map(EntityModelUtil::toEnrollmentResponseModel);
     }
 
-
-    public Mono<CourseResponseModel> courseRequestResponse(String courseId) {
-        return courseClient.getCourseByCourseId(courseId);
+    //DONE: implement the updateEnrollment method
+    public Mono<EnrollmentResponseModel> updateEnrollmentByEnrollmentId(Mono<EnrollmentRequestModel> enrollmentRequestModelMono, String enrollmentId) {
+        return enrollmentRepository.findEnrollmentByEnrollmentId(enrollmentId)
+                .switchIfEmpty(Mono.defer(() -> Mono.error(new NotFoundException("Enrollment not found" + enrollmentId))))
+                .flatMap(found -> enrollmentRequestModelMono
+                        .map(RequestContext::new)
+                        .flatMap(this::studentRequestResponse)
+                        .flatMap(this::courseRequestResponse)
+                        .map(EntityModelUtil::toEnrollmentEntity)
+                        .doOnNext(e -> e.setEnrollmentId(found.getEnrollmentId()))
+                        .doOnNext(e -> e.setId(found.getId()))
+                )
+                .flatMap(enrollmentRepository::save)
+                .map(EntityModelUtil::toEnrollmentResponseModel);
     }
+
+    //DONE: implement the deleteEnrollment method
+    public Mono<EnrollmentResponseModel> deleteEnrollmentByEnrollmentId(String enrollmentId) {
+        return enrollmentRepository.findEnrollmentByEnrollmentId(enrollmentId)
+                .switchIfEmpty(Mono.defer(() -> Mono.error(new NotFoundException("Enrollment not found" + enrollmentId)))
+                )
+                .flatMap(found -> enrollmentRepository.delete(found)
+                        .then(Mono.just(found)))
+                .map(EntityModelUtil::toEnrollmentResponseModel);
+    }
+
     private Mono<RequestContext> studentRequestResponse(RequestContext rc) {
-        return this.studentClient
+        return studentClient
                 .getStudentByStudentId(rc.getEnrollmentRequestModel().getStudentId())
                 .doOnNext(rc::setStudentResponseModel)
                 .thenReturn(rc);
     }
-
     private Mono<RequestContext> courseRequestResponse(RequestContext rc) {
-        return this.courseClient
+        return courseClient
                 .getCourseByCourseId(rc.getEnrollmentRequestModel().getCourseId())
                 .doOnNext(rc::setCourseResponseModel)
-                .thenReturn(rc)
-                .onErrorResume(e -> {
-                    logger.info("Error processing course request: {}" +  e.getMessage() + e);
-                    return Mono.error(new EnrollmentException("Failed to process Course", e));
-                });
+                .thenReturn(rc);
     }
-
-
 }
-
