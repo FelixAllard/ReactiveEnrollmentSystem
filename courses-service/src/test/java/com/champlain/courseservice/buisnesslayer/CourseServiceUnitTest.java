@@ -137,7 +137,7 @@ class CourseServiceUnitTest {
     @Test
     void updateCourseByCourseId_withNonExistingCourseId_thenThrowNotFoundException(){
         // Given
-        String courseId = course1.getCourseId();
+        String courseId = "non-existing-course-id";
         CourseRequestModel courseRequestModel = CourseRequestModel.builder()
                 .courseNumber("cat-420-updated")
                 .courseName("Web Services Updated")
@@ -146,29 +146,14 @@ class CourseServiceUnitTest {
                 .department("Computer Science Updated")
                 .build();
 
-        Mockito.when(courseRepository.findCourseByCourseId(courseId)).thenReturn(Mono.just(course1));
-        course1.setCourseNumber(courseRequestModel.getCourseNumber()); // Update course number
-        course1.setCourseName(courseRequestModel.getCourseName()); // Update course name
-        course1.setNumHours(courseRequestModel.getNumHours());
-        course1.setNumCredits(courseRequestModel.getNumCredits());
-        course1.setDepartment(courseRequestModel.getDepartment());
-        Mockito.when(courseRepository.save(any(Course.class))).thenReturn(Mono.just(course1));
+        Mockito.when(courseRepository.findCourseByCourseId(courseId)).thenReturn(Mono.empty());
 
         // When
         Mono<CourseResponseModel> result = courseService.updateCourseByCourseId(Mono.just(courseRequestModel), courseId);
 
         // Then
         StepVerifier.create(result)
-                .expectNextMatches(courseResponseModel -> {
-                    assertEquals(courseId, courseResponseModel.getCourseId());
-                    assertEquals(courseRequestModel.getCourseNumber(), courseResponseModel.getCourseNumber());
-                    assertEquals(courseRequestModel.getCourseName(), courseResponseModel.getCourseName());
-                    assertEquals(courseRequestModel.getNumHours(), courseResponseModel.getNumHours());
-                    assertEquals(courseRequestModel.getNumCredits(), courseResponseModel.getNumCredits());
-                    assertEquals(courseRequestModel.getDepartment(), courseResponseModel.getDepartment());
-                    return true;
-                })
-                .expectError(NotFoundException.class)
+                .expectErrorMessage("Course id not found: " + courseId)
                 .verify();
     }
     @Test
@@ -192,21 +177,17 @@ class CourseServiceUnitTest {
     }
     @Test
     void deleteCourseByCourseId_withNonExistingCourseId_thenThrowNotFoundException(){
-        String courseId = "77918ba2-49da-4c67-bea8-111111111111";
+        // Given
+        String courseId = "non-existing-course-id";
 
-        Mockito.when(courseRepository.findCourseByCourseId(courseId)).thenReturn(Mono.just(course1));
-        Mockito.when(courseRepository.delete(course1)).thenReturn(Mono.empty());
+        Mockito.when(courseRepository.findCourseByCourseId(courseId)).thenReturn(Mono.empty());
 
         // When
         Mono<CourseResponseModel> result = courseService.deleteCourseByCourseId(courseId);
 
         // Then
         StepVerifier.create(result)
-                .expectNextMatches(courseResponseModel -> {
-                    assertEquals(courseId, courseResponseModel.getCourseId());
-                    return true;
-                })
-                .expectError(NotFoundException.class)
+                .expectErrorMessage("Course id not found: " + courseId)
                 .verify();
     }
 
