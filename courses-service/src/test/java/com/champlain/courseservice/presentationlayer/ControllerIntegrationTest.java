@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -157,5 +158,61 @@ class CourseControllerIntegrationTest {
                 });
 
     }
+    @Test
+    void updateCourse_withValidCourseId_ShouldSucceed() {
+        // Given
+        CourseRequestModel courseRequestModel = CourseRequestModel.builder()
+                .courseNumber("cat-423")
+                .courseName("Web Services Testing")
+                .numHours(45)
+                .numCredits(3.0)
+                .department("Computer Science")
+                .build();
+        // When
+        webTestClient
+                .put()
+                .uri("/api/v1/courses/{courseId}", validCourseId)
+                .bodyValue(courseRequestModel)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().valueEquals("Content-Type", "application/json")
+                .expectBody(CourseResponseModel.class)
+                .value((updatedCourseResponse) -> {
+                    assertNotNull(updatedCourseResponse);
+                    assertEquals(validCourseId, updatedCourseResponse.getCourseId());
+                    assertEquals(courseRequestModel.getCourseNumber(),updatedCourseResponse.getCourseNumber());
+                    assertEquals(courseRequestModel.getCourseName(),updatedCourseResponse.getCourseName());
+                    assertEquals(courseRequestModel.getNumHours(),updatedCourseResponse.getNumHours());
+                    assertEquals(courseRequestModel.getNumCredits(),updatedCourseResponse.getNumCredits());
+                    assertEquals(courseRequestModel.getDepartment(),updatedCourseResponse.getDepartment());
+                });
+        webTestClient
+                .get()
+                .uri("/api/v1/courses/{courseId}", validCourseId)
+                .accept(MediaType.TEXT_EVENT_STREAM)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().valueEquals("Content-Type", "text/event-stream;charset=UTF-8")
+                .returnResult(CourseResponseModel.class)
+                .getResponseBody()
+                .as(StepVerifier::create)
+                .expectNextMatches(updatedCourseResponse -> {
+                    assertNotNull(updatedCourseResponse);
+                    assertEquals(validCourseId, updatedCourseResponse.getCourseId());
+                    assertEquals(courseRequestModel.getCourseNumber(),updatedCourseResponse.getCourseNumber());
+                    assertEquals(courseRequestModel.getCourseName(),updatedCourseResponse.getCourseName());
+                    assertEquals(courseRequestModel.getNumHours(),updatedCourseResponse.getNumHours());
+                    assertEquals(courseRequestModel.getNumCredits(),updatedCourseResponse.getNumCredits());
+                    assertEquals(courseRequestModel.getDepartment(),updatedCourseResponse.getDepartment());
+                    return true;
+                })
+                .verifyComplete();
+    }
+    @Test
+    void updateCourse_withNonExistingCourseId_ShouldReturnNotFound(){
+
+    }
+
 
 }
