@@ -211,7 +211,32 @@ class CourseControllerIntegrationTest {
     }
     @Test
     void updateCourse_withNonExistingCourseId_ShouldReturnNotFound(){
-
+        String invalidCourseId = "77918ba2-49da-4c67-bea8-111111111111";
+        CourseRequestModel courseRequestModel = CourseRequestModel.builder()
+                .courseNumber("cat-423")
+                .courseName("Web Services Testing")
+                .numHours(45)
+                .numCredits(3.0)
+                .department("Computer Science")
+                .build();
+        webTestClient
+                .put()
+                .uri("/api/v1/courses/{courseId}", invalidCourseId )
+                .bodyValue(courseRequestModel)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectHeader().valueEquals("Content-Type", "application/json")
+                .expectBody(CourseResponseModel.class)
+                .value((updatedCourseResponse) -> {
+                    assertNotNull(updatedCourseResponse);
+                    assertNull(updatedCourseResponse.getCourseId());
+                    assertNull(updatedCourseResponse.getCourseNumber());
+                    assertNull(updatedCourseResponse.getCourseName());
+                    assertNull(updatedCourseResponse.getNumHours());
+                    assertNull(updatedCourseResponse.getNumCredits());
+                    assertNull(updatedCourseResponse.getDepartment());
+                });
     }
 
 
