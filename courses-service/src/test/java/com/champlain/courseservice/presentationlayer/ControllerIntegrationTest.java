@@ -1,8 +1,6 @@
 package com.champlain.courseservice.presentationlayer;
 
-
 import com.champlain.courseservice.dataaccesslayer.CourseRepository;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +38,6 @@ class CourseControllerIntegrationTest {
                     assertEquals(dbSize, count);
                 })
                 .verifyComplete();
-
     }
     @Test
     void addNewCourse_shouldSucceed() {
@@ -90,6 +87,5 @@ class CourseControllerIntegrationTest {
                     assertEquals(dbSize, list.size());
                 });
     }
-
 
 }
