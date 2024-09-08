@@ -172,9 +172,43 @@ class CourseServiceUnitTest {
                 .verify();
     }
     @Test
-    void deleteCourseByCourseId_withExistingCourseId_ReturnsDeletedCourseId(){}
+    void deleteCourseByCourseId_withExistingCourseId_ReturnsDeletedCourseId(){
+        // Given
+        String courseId = course1.getCourseId();
+
+        Mockito.when(courseRepository.findCourseByCourseId(courseId)).thenReturn(Mono.just(course1));
+        Mockito.when(courseRepository.delete(course1)).thenReturn(Mono.empty());
+
+        // When
+        Mono<CourseResponseModel> result = courseService.deleteCourseByCourseId(courseId);
+
+        // Then
+        StepVerifier.create(result)
+                .expectNextMatches(courseResponseModel -> {
+                    assertEquals(courseId, courseResponseModel.getCourseId());
+                    return true;
+                })
+                .verifyComplete();
+    }
     @Test
-    void deleteCourseByCourseId_withNonExistingCourseId_thenThrowNotFoundException(){}
+    void deleteCourseByCourseId_withNonExistingCourseId_thenThrowNotFoundException(){
+        String courseId = "77918ba2-49da-4c67-bea8-111111111111";
+
+        Mockito.when(courseRepository.findCourseByCourseId(courseId)).thenReturn(Mono.just(course1));
+        Mockito.when(courseRepository.delete(course1)).thenReturn(Mono.empty());
+
+        // When
+        Mono<CourseResponseModel> result = courseService.deleteCourseByCourseId(courseId);
+
+        // Then
+        StepVerifier.create(result)
+                .expectNextMatches(courseResponseModel -> {
+                    assertEquals(courseId, courseResponseModel.getCourseId());
+                    return true;
+                })
+                .expectError(NotFoundException.class)
+                .verify();
+    }
 
 
     @Test
