@@ -38,8 +38,10 @@ dependencies {
 	testImplementation 'io.projectreactor:reactor-test'
 	testImplementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x:4.9.2'
 	// https://mvnrepository.com/artifact/de.flapdoodle.embed/de.flapdoodle.embed.mongo.spring3x
-	//implementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring3x:4.16.1'
+	// implementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring3x:4.16.1'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testImplementation "org.mock-server:mockserver-netty:5.13.0"
+	testImplementation "org.mock-server:mockserver-client-java:5.13.0"
 }
 
 
@@ -53,10 +55,10 @@ jacocoTestReport {
 	afterEvaluate {
 		classDirectories.setFrom(files(classDirectories.files.collect {
 			fileTree(dir: it, exclude: [
-					"com/champlain/enrollmentservice/presentationlayer/students/**",
-					"com/champlain/enrollmentservice/businesslayer/students/**",
-					"com/champlain/enrollmentservice/domainclientlayer/Students/StudentClientSynchronous.class"
 					//"com/petclinic/**/BillingServiceApplication.class"
+					"com/champlain/enrollmentsservice/presentationlayer/students/**",
+					"com/champlain/enrollmentsservice/businesslayer/students/**",
+					"com/champlain/enrollmentsservice/domainclientlayer/Students/StudentClientSynchronous.class"
 			])
 		}))
 	}

@@ -1,5 +1,6 @@
 package com.champlain.enrollmentsservice.businesslayer.enrollments;
 
+import com.champlain.enrollmentsservice.dataaccesslayer.Enrollment;
 import com.champlain.enrollmentsservice.dataaccesslayer.EnrollmentRepository;
 import com.champlain.enrollmentsservice.domainclientlayer.Courses.CourseClient;
 import com.champlain.enrollmentsservice.domainclientlayer.Students.StudentClientAsynchronous;
@@ -14,30 +15,61 @@ import reactor.core.publisher.Mono;
 
 @Service
 @Slf4j
-public class EnrollmentServiceImpl implements EnrollmentService{
+public class EnrollmentServiceImpl implements EnrollmentService {
 
-    private final EnrollmentRepository enrollmentRepository;
-    private final CourseClient courseClient;
-    private final StudentClientAsynchronous studentClient;
+    final private StudentClientAsynchronous studentClient;
+    final private CourseClient courseClient;
+    final private EnrollmentRepository enrollmentRepository;
 
-    public EnrollmentServiceImpl(EnrollmentRepository enrollmentRepository, CourseClient courseClient, StudentClientAsynchronous studentClient) {
-        this.enrollmentRepository = enrollmentRepository;
-        this.courseClient = courseClient;
+    public EnrollmentServiceImpl(StudentClientAsynchronous studentClient, CourseClient courseClient, EnrollmentRepository enrollmentRepository) {
         this.studentClient = studentClient;
+        this.courseClient = courseClient;
+        this.enrollmentRepository = enrollmentRepository;
     }
 
-    //DONE: implement the getAllEnrollments method
+    @Override
     public Flux<EnrollmentResponseModel> getAllEnrollments() {
         return enrollmentRepository.findAll()
-                .map(EntityModelUtil::toEnrollmentResponseModel);
+                .flatMap(enrollment -> Mono.zip(
+                        studentClient.getStudentByStudentId(enrollment.getStudentId()),
+                        courseClient.getCourseByCourseId(enrollment.getCourseId()),
+                        Mono.just(enrollment)
+                ))
+                .map(tuple -> {
+                    var enrollment = tuple.getT3();
+                    var student = tuple.getT1();
+                    var course = tuple.getT2();
+
+                    enrollment.setStudentFirstName(student.getFirstName());
+                    enrollment.setStudentLastName(student.getLastName());
+                    enrollment.setCourseNumber(course.getCourseNumber());
+                    enrollment.setCourseName(course.getCourseName());
+
+                    return EntityModelUtil.toEnrollmentResponseModel(enrollment);
+                });
     }
 
-    //DONE: implement the getEnrollmentByEnrollmentId method
+    @Override
     public Mono<EnrollmentResponseModel> getEnrollmentByEnrollmentId(String enrollmentId) {
         return enrollmentRepository.findEnrollmentByEnrollmentId(enrollmentId)
-                .switchIfEmpty(Mono.defer(() -> Mono.error(new NotFoundException("Enrollment not found" + enrollmentId))))
-                .doOnNext(e -> log.debug("The enrollment response entity is: " + e.toString()))
-                .map(EntityModelUtil::toEnrollmentResponseModel);
+                .switchIfEmpty(Mono.error(new NotFoundException("Enrollment id not found " + enrollmentId)))
+                .flatMap(enrollment -> Mono.zip(
+                        studentClient.getStudentByStudentId(enrollment.getStudentId()),
+                        courseClient.getCourseByCourseId(enrollment.getCourseId()),
+                        Mono.just(enrollment)
+                ))
+                .map(tuple -> {
+                    var enrollment = tuple.getT3();
+                    var student = tuple.getT1();
+                    var course = tuple.getT2();
+
+                    enrollment.setStudentFirstName(student.getFirstName());
+                    enrollment.setStudentLastName(student.getLastName());
+                    enrollment.setCourseNumber(course.getCourseNumber());
+                    enrollment.setCourseName(course.getCourseName());
+
+                    return EntityModelUtil.toEnrollmentResponseModel(enrollment);
+                });
     }
 
     @Override
@@ -47,46 +79,63 @@ public class EnrollmentServiceImpl implements EnrollmentService{
                 .flatMap(this::studentRequestResponse)
                 .flatMap(this::courseRequestResponse)
                 .map(EntityModelUtil::toEnrollmentEntity)
-                .flatMap(enrollmentRepository::save)
+                .map(enrollmentRepository::save)
+                .flatMap(entity -> entity)
                 .map(EntityModelUtil::toEnrollmentResponseModel);
     }
 
-    //DONE: implement the updateEnrollment method
-    public Mono<EnrollmentResponseModel> updateEnrollmentByEnrollmentId(Mono<EnrollmentRequestModel> enrollmentRequestModelMono, String enrollmentId) {
+    @Override
+    public Mono<EnrollmentResponseModel> updateEnrollmentByEnrollmentId(Mono<EnrollmentRequestModel> enrollmentRequestModel, String enrollmentId) {
         return enrollmentRepository.findEnrollmentByEnrollmentId(enrollmentId)
-                .switchIfEmpty(Mono.defer(() -> Mono.error(new NotFoundException("Enrollment not found" + enrollmentId))))
-                .flatMap(found -> enrollmentRequestModelMono
+                .switchIfEmpty(Mono.defer(() -> Mono.error(new NotFoundException("Enrollment id not found " + enrollmentId))))
+                .flatMap(s -> enrollmentRequestModel
                         .map(RequestContext::new)
                         .flatMap(this::studentRequestResponse)
                         .flatMap(this::courseRequestResponse)
                         .map(EntityModelUtil::toEnrollmentEntity)
-                        .doOnNext(e -> e.setEnrollmentId(found.getEnrollmentId()))
-                        .doOnNext(e -> e.setId(found.getId()))
-                )
+                        .doOnNext(e -> e.setEnrollmentId(s.getEnrollmentId()))
+                        .doOnNext(e -> e.setId(s.getId())))
                 .flatMap(enrollmentRepository::save)
                 .map(EntityModelUtil::toEnrollmentResponseModel);
     }
 
-    //DONE: implement the deleteEnrollment method
+    @Override
     public Mono<EnrollmentResponseModel> deleteEnrollmentByEnrollmentId(String enrollmentId) {
         return enrollmentRepository.findEnrollmentByEnrollmentId(enrollmentId)
-                .switchIfEmpty(Mono.defer(() -> Mono.error(new NotFoundException("Enrollment not found" + enrollmentId)))
-                )
-                .flatMap(found -> enrollmentRepository.delete(found)
-                        .then(Mono.just(found)))
-                .map(EntityModelUtil::toEnrollmentResponseModel);
+                .switchIfEmpty(Mono.defer(() -> Mono.error(new NotFoundException("Enrollment id not found " + enrollmentId))))
+                .flatMap(enrollment -> {
+                    EnrollmentResponseModel responseModel = convertToResponseModel(enrollment);
+
+                    return enrollmentRepository.delete(enrollment)
+                            .then(Mono.just(responseModel));
+                });
     }
 
     private Mono<RequestContext> studentRequestResponse(RequestContext rc) {
-        return studentClient
+        return this.studentClient
                 .getStudentByStudentId(rc.getEnrollmentRequestModel().getStudentId())
                 .doOnNext(rc::setStudentResponseModel)
                 .thenReturn(rc);
     }
+
     private Mono<RequestContext> courseRequestResponse(RequestContext rc) {
-        return courseClient
+        return this.courseClient
                 .getCourseByCourseId(rc.getEnrollmentRequestModel().getCourseId())
                 .doOnNext(rc::setCourseResponseModel)
                 .thenReturn(rc);
+    }
+
+    private EnrollmentResponseModel convertToResponseModel(Enrollment enrollment) {
+        return new EnrollmentResponseModel(
+                enrollment.getEnrollmentId(),
+                enrollment.getEnrollmentYear(),
+                enrollment.getSemester(),
+                enrollment.getStudentId(),
+                enrollment.getStudentFirstName(),
+                enrollment.getStudentLastName(),
+                enrollment.getCourseId(),
+                enrollment.getCourseNumber(),
+                enrollment.getCourseName()
+        );
     }
 }
