@@ -2,7 +2,9 @@ package com.champlain.courseservice.presentationlayer;
 
 import com.champlain.courseservice.businesslayer.CourseService;
 import com.champlain.courseservice.businesslayer.CourseServiceImpl;
+import com.champlain.courseservice.dataaccesslayer.Course;
 import com.champlain.courseservice.dataaccesslayer.CourseRepository;
+import com.champlain.courseservice.utils.EntityModelUtil;
 import com.champlain.courseservice.utils.exceptions.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import javax.swing.text.html.parser.Entity;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -267,6 +270,58 @@ class CourseControllerIntegrationTest {
                     assertNull(updatedCourseResponse.getDepartment());
                 });
     }
+    @Test
+    void deleteCourse_withValidCourseId_ShouldReturnDeletedCourse() {
+        // Given
+        CourseRequestModel courseRequestModel = CourseRequestModel.builder()
+                .courseNumber("qgz-480")
+                .courseName("History of Ancient Babylonia")
+                .numHours(45)
+                .numCredits(3.0)
+                .department("History")
+                .build();
+
+                    // When
+        webTestClient
+                .delete()
+                .uri("/api/v1/courses/{courseId}", validCourseId)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().valueEquals("Content-Type", "application/json")
+                .expectBody(CourseResponseModel.class)
+                .value((deletedCourseResponse) -> {
+                    assertNotNull(deletedCourseResponse);
+                    assertEquals(validCourseId, deletedCourseResponse.getCourseId());
+                    assertEquals(courseRequestModel.getCourseNumber(), deletedCourseResponse.getCourseNumber());
+                    assertEquals(courseRequestModel.getCourseName(), deletedCourseResponse.getCourseName());
+                    assertEquals(courseRequestModel.getNumHours(), deletedCourseResponse.getNumHours());
+                    assertEquals(courseRequestModel.getNumCredits(), deletedCourseResponse.getNumCredits());
+                    assertEquals(courseRequestModel.getDepartment(), deletedCourseResponse.getDepartment());
+                });
+        webTestClient
+                .get()
+                .uri("/api/v1/courses/{courseId}", validCourseId)
+                .accept(MediaType.TEXT_EVENT_STREAM)
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectHeader().valueEquals("Content-Type", "text/event-stream;charset=UTF-8")
+                .returnResult(CourseResponseModel.class)
+                .getResponseBody()
+                .as(StepVerifier::create)
+                .expectNextMatches(updatedCourseResponse -> {
+                    assertNotNull(updatedCourseResponse);
+                    assertNull(updatedCourseResponse.getCourseId());
+                    assertNull(updatedCourseResponse.getCourseNumber());
+                    assertNull(updatedCourseResponse.getCourseName());
+                    assertNull(updatedCourseResponse.getNumHours());
+                    assertNull(updatedCourseResponse.getNumCredits());
+                    assertNull(updatedCourseResponse.getDepartment());
+                    return true;
+                })
+                .verifyComplete();
+    }
+
 
 
 
